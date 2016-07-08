@@ -58,11 +58,37 @@ public class EntityManagerImpl implements EntityManager {
         return null;
     }
 
-    //2
-    @Override
-    public Long getNextIdVal(String tableName, String columnIdName) {
-        return 1L;
+//2
+public Long getNextIdVal(String tableName, String columnIdName) {
+
+
+        try {
+            Connection c = DBManager.getConnection();
+            Statement st = c.createStatement();
+
+
+
+
+            ResultSet r = st.executeQuery("SELECT max(" + columnIdName + ") FROM " + tableName);
+
+            if (r.next()) {
+                System.out.println(r);
+                Long id_value = r.getLong(1);
+                id_value++;
+                System.out.println(id_value);
+                return id_value;
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Probleme la crearea statementului");
+            e.printStackTrace();
+
+        }
+        return 0L;
+
     }
+
+
 
     //3
     @Override
