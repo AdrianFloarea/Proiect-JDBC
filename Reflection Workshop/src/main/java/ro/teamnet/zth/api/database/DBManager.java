@@ -26,6 +26,7 @@ public class DBManager {
 
     public static Connection getConnection() {
         Connection conn;
+        registerDriver();
         try {
             conn = DriverManager.getConnection(CONNECTION_STRING, DBProperties.USER, DBProperties.PASS);
             return conn;
