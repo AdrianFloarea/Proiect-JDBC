@@ -22,7 +22,8 @@ import java.util.List;
 /**
  * Created by user on 7/8/2016.
  */
-public class EntityManagerImpl implements EntityManager{
+public class EntityManagerImpl implements EntityManager {
+    //1
     @Override
     public <T> T findById(Class<T> entityClass, Long id) {
         //-	create a connection to DB;
@@ -33,7 +34,7 @@ public class EntityManagerImpl implements EntityManager{
 
         String tableName = EntityUtils.getTableName(entityClass);
         List<ColumnInfo> columns = EntityUtils.getColumns(entityClass);
-       // List<Field> fields = EntityUtils.getFieldsByAnnotations(entityClass, );
+        // List<Field> fields = EntityUtils.getFieldsByAnnotations(entityClass, );
 
         //-	create a Condition object in which you have to set column name and the value of the id;
 
@@ -57,30 +58,22 @@ public class EntityManagerImpl implements EntityManager{
         return null;
     }
 
+    //2
     @Override
-    public void getNextIdVal(String tableName, String columnIdName) {
-
+    public Long getNextIdVal(String tableName, String columnIdName) {
+        return 1L;
     }
 
+    //3
     @Override
     public <T> Object insert(T entity) {
-        return null;
-    }
-
-    @Override
-    public <T> List<T> findAll(Class<T> entityClass) {
-        return null;
-    }
-public class EntityManagerImpl implements EntityManager {
-
-    public <T> Object insert(Class<T> entity) {
         Connection con = DBManager.getConnection();
         DBManager.checkConnection(con);
 
-        String tableName = EntityUtils.getTableName(entity);
+        String tableName = EntityUtils.getTableName(entity.getClass());
 
-        List<ColumnInfo> columnsList = EntityUtils.getColumns(entity);
-        long id = setID(entity, columnsList);
+        List<ColumnInfo> columnsList = EntityUtils.getColumns(entity.getClass());
+        long id = setID(entity.getClass(), columnsList);
 
 
         QueryBuilder qb = new QueryBuilder();
@@ -94,12 +87,41 @@ public class EntityManagerImpl implements EntityManager {
         try {
             statement = con.createStatement();
             statement.execute(query);
-        }
-        catch (SQLException e) {
+        } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        return findByIdMethod(entity,id);
+        return findById(entity.getClass(), id);
+    }
+
+    //4
+    @Override
+    public <T> List<T> findAll(Class<T> entityClass) {
+        Connection con = DBManager.getConnection();
+        List<T> list = new ArrayList<>();
+        try {
+            Statement st = con.createStatement();
+            QueryBuilder queryBuilder = new QueryBuilder();
+            queryBuilder.setQueryType(QueryType.SELECT);
+            queryBuilder.setTableName(EntityUtils.getTableName(entityClass));
+            queryBuilder.addQueryColumns(EntityUtils.getColumns(entityClass));
+            String query = queryBuilder.createQuery();
+            ResultSet rs = st.executeQuery(query);
+            while (rs.next()) {
+                T t = entityClass.newInstance();
+                for (ColumnInfo cf : EntityUtils.getColumns(entityClass)) {
+                    Object o = rs.getObject(cf.getDbName());
+                    Field f = t.getClass().getDeclaredField(cf.getColumnName());
+                    f.setAccessible(true);
+                    f.set(t, EntityUtils.castFromSqlType(o, cf.getColumnType()));
+
+                }
+                list.add(t);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
     }
 
     private <T> long setID(Class<T> entity, List<ColumnInfo> columnsInfo) {
@@ -113,11 +135,10 @@ public class EntityManagerImpl implements EntityManager {
                 System.out.println("NoSuchFieldException");
             }
 
-            if (column.isId()){
-                id = getNextIdVal(tableName, column.getColumnName());
+            if (column.isId()) {
+                id = getNextIdVal(EntityUtils.getTableName(entity), column.getColumnName());
                 column.setValue(id);
-            }
-            else {
+            } else {
                 column.setValue(field);
             }
         }
