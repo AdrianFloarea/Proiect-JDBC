@@ -14,7 +14,7 @@ import ro.teamnet.zth.api.annotations.Table;
 public class Job {
 
     @Id(name = "JOB_ID")
-    private Integer id;
+    private String id;
 
     @Column(name = "JOB_TITLE")
     private String jobTitle;
@@ -25,11 +25,11 @@ public class Job {
     @Column(name = "MAX_SALARY")
     private Integer maxSalary;
 
-    public Integer getId() {
+    public String getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(String id) {
         this.id = id;
     }
 
