@@ -154,9 +154,6 @@ public class QueryBuilder {
         StringBuilder sqlValues = new StringBuilder(" values (");
         boolean first = true;
         for (ColumnInfo columnInfo : queryColumns) {
-            if (columnInfo.isId()) {
-                continue;
-            }
             if (!first) {
                 sql.append(",");
                 sqlValues.append(",");

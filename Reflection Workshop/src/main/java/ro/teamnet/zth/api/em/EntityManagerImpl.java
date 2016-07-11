@@ -56,6 +56,7 @@ public class EntityManagerImpl implements EntityManager {
 
     @Override
     public <T> Object insert(T entity) {
+        try {
         Connection con = DBManager.getConnection();
         DBManager.checkConnection(con);
 
@@ -63,14 +64,32 @@ public class EntityManagerImpl implements EntityManager {
 
         List<ColumnInfo> columnsList = EntityUtils.getColumns(entity.getClass());
         Long id = 0L;
-        for (ColumnInfo column : columnsList) {
+        List<Field> fields=EntityUtils.getFieldsByAnnotations(entity.getClass(),Id.class);
+        fields.addAll(EntityUtils.getFieldsByAnnotations(entity.getClass(),Column.class));
+        for(int i=0; i<fields.size();i++){
+            if(columnsList.get(i).isId()){
+                id=getNextIdVal(tableName,columnsList.get(i).getDbName());
+                columnsList.get(i).setValue(id);
+            }else{
+                ColumnInfo columnInfo=columnsList.get(i);
+                    Field field=fields.get(i);
+                    field.setAccessible(true);
+                    columnInfo.setValue(field.get(entity));
+
+                columnsList.set(i,columnInfo);
+            }
+        }
+
+        /*for (ColumnInfo column : columnsList) {
             if (column.isId()) {
                 id = getNextIdVal(tableName, column.getDbName());
                 //System.out.println(id);
                 column.setValue(id);
                 break;
+            }else{
+
             }
-        }
+        }*/
 
         QueryBuilder qb = new QueryBuilder();
         qb.setTableName(tableName);
@@ -81,14 +100,15 @@ public class EntityManagerImpl implements EntityManager {
         String query = qb.createQuery();
 
         Statement statement = null;
-        try {
             statement = con.createStatement();
             statement.execute(query);
-        } catch (SQLException e) {
+            return findById(entity.getClass(), id);
+        } catch (Exception e) {
             e.printStackTrace();
+            return null;
         }
 
-        return findById(entity.getClass(), id);
+
     }
 
     @Override
